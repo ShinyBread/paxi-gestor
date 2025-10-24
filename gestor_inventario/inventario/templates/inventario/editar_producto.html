@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Producto{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-8 rounded-lg shadow">
+    <h2 class="text-2xl font-bold mb-6 text-center">Editar "{{ producto.nombre }}"</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                {{ form.nombre }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Precio de Venta</label>
+                {{ form.precio_venta }}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-8">
+            <a href="{% url 'lista_productos' %}" class="py-2 px-4 rounded-md text-sm text-gray-600 hover:bg-gray-100">
+                Cancelar
+            </a>
+            <button type="submit" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                Actualizar Producto
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
