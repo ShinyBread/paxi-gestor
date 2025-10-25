@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Seguimiento de Pedidos{% endblock %}
+
+{% block content %}
+<div class="bg-white/70 p-6 rounded-lg shadow-lg backdrop-blur-sm">
+
+    <h2 class="text-2xl font-bold mb-6">Rastrear Pedido (Consulta Directa)</h2>
+
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-6 rounded">
+        <p class="font-bold">Modo de Consulta Directa:</p>
+        <p class="text-sm">Esta herramienta abrirá el sitio web de la empresa de transporte para que rastrees el pedido manualmente.</p>
+    </div>
+
+    <form id="tracking-form" onsubmit="return false;" class="mb-8 p-4 bg-white/50 rounded-lg border border-white/20">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label for="tracking_number" class="block text-sm font-medium text-gray-700">Número de Seguimiento</label>
+                <input type="text" name="tracking_number" id="tracking_number" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="carrier_site" class="block text-sm font-medium text-gray-700">Empresa de Transporte</label>
+                <select id="carrier_site" name="carrier_site" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 sm:text-sm">
+                    <option value="https://www.correos.cl/seguimiento-en-linea?codigos=">Correos Chile</option>
+                    <option value="https://centrodeayuda.chilexpress.cl/pre-seguimiento/">Chilexpress</option>
+                    <option value="https://www.blue.cl/enviar/seguimiento?n_seguimiento=">BLU Express</option>
+                </select>
+            </div>
+            <button type="submit" id="track-button" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 h-10">
+                Abrir Seguimiento
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<script>
+    document.getElementById('tracking-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Detiene el envío estándar del formulario
+        
+        const carrierSelect = document.getElementById('carrier_site');
+        const trackingInput = document.getElementById('tracking_number');
+        
+        const baseURL = carrierSelect.value;
+        const trackingNumber = trackingInput.value.trim();
+
+        if (trackingNumber) {
+            // Concatena la URL base con el número de seguimiento
+            // Esto asume que la URL base termina con el símbolo "=" o es la base de la consulta
+            const finalURL = baseURL + trackingNumber;
+            
+            // Abre el enlace en una nueva pestaña
+            window.open(finalURL, '_blank');
+        } else {
+            alert('Por favor, ingresa un número de seguimiento.');
+        }
+    });
+</script>
+{% endblock %}

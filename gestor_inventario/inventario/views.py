@@ -290,3 +290,5 @@ def exportar_excel(request):
     response['Content-Disposition'] = 'attachment; filename="inventario_export.xlsx"'
 
     return response
+def seguimiento_pedidos(request):
+    return render(request, 'inventario/seguimiento_pedidos.html', {})
