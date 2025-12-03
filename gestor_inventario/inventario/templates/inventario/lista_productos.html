@@ -80,44 +80,65 @@
         </table>
     </div>
 
-    <nav class="mt-6 flex items-center justify-end">
-         <ul class="flex items-center -space-x-px h-10 text-base">
-            {% if productos_pagina.has_previous %}
+<nav class="mt-6 flex items-center justify-end">
+    <ul class="flex items-center space-x-0 sm:space-x-1 text-base">
+        
+        {% if productos_pagina.has_previous %}
+            <li>
+                <a href="?page={{ productos_pagina.previous_page_number }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}" 
+                   class="flex items-center justify-center w-10 h-10 ms-0 leading-tight text-gray-600 bg-white/50 border border-gray-300/50 rounded-l-lg hover:bg-white/80">
+                    <span class="sr-only">Anterior</span>
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4"/></svg>
+                </a>
+            </li>
+        {% endif %}
+
+        {% for i in productos_pagina.paginator.page_range %}
+            {% comment %} 
+                Lógica para limitar a 5 páginas alrededor de la página actual, 
+                más la primera y la última página. 
+            {% endcomment %}
+            {% if i == productos_pagina.number or i == 1 or i == productos_pagina.paginator.num_pages or i <= productos_pagina.number|add:2 and i >= productos_pagina.number|add:"-2" %}
+                
                 <li>
-                    <a href="?page={{ productos_pagina.previous_page_number }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}"
-                       class="flex items-center justify-center px-4 h-10 ms-0 leading-tight text-gray-600 bg-white/50 border border-e-0 border-gray-300/50 rounded-l-lg hover:bg-white/80">
-                        <span class="sr-only">Anterior</span>
-                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4"/></svg>
+                    <a href="?page={{ i }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}" 
+                       class="flex items-center justify-center w-10 h-10 leading-tight 
+                           {% if productos_pagina.number == i %}
+                               text-blue-600 border border-blue-400 bg-blue-100
+                           {% else %}
+                               text-gray-600 bg-white/50 border border-gray-300/50 hover:bg-white/80
+                           {% endif %}">
+                        {{ i }}
                     </a>
                 </li>
-            {% endif %}
-            {% for num in productos_pagina.paginator.page_range %}
-                {% if productos_pagina.number == num %}
-                    <li>
-                        <a href="#" aria-current="page" class="z-10 flex items-center justify-center px-4 h-10 leading-tight text-blue-600 border border-blue-400 bg-blue-100 hover:bg-blue-100">
-                            {{ num }}
-                        </a>
-                    </li>
-                {% else %}
-                    <li>
-                        <a href="?page={{ num }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}"
-                           class="flex items-center justify-center px-4 h-10 leading-tight text-gray-600 bg-white/50 border border-gray-300/50 hover:bg-white/80">
-                            {{ num }}
-                        </a>
-                    </li>
+            
+            {% elif i > 2 and i < productos_pagina.number|add:"-2" %}
+                {# Muestra elipsis si el número actual es mayor a 2 y está fuera del rango visible #}
+                {% if forloop.last or i == 2 %} 
+                    <li><span class="flex items-center justify-center w-10 h-10 text-gray-600">...</span></li>
                 {% endif %}
-            {% endfor %}
-            {% if productos_pagina.has_next %}
-                <li>
-                    <a href="?page={{ productos_pagina.next_page_number }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}"
-                       class="flex items-center justify-center px-4 h-10 leading-tight text-gray-600 bg-white/50 border border-gray-300/50 rounded-r-lg hover:bg-white/80">
-                        <span class="sr-only">Siguiente</span>
-                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/></svg>
-                    </a>
-                </li>
+
+            {% elif i < productos_pagina.paginator.num_pages|add:"-1" and i > productos_pagina.number|add:2 %}
+                {# Muestra elipsis si el número actual es menor al penúltimo y está fuera del rango visible #}
+                {% if forloop.first %} 
+                    <li><span class="flex items-center justify-center w-10 h-10 text-gray-600">...</span></li>
+                {% endif %}
+
             {% endif %}
-        </ul>
-    </nav>
+        {% endfor %}
+
+
+        {% if productos_pagina.has_next %}
+            <li>
+                <a href="?page={{ productos_pagina.next_page_number }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}" 
+                   class="flex items-center justify-center w-10 h-10 leading-tight text-gray-600 bg-white/50 border border-gray-300/50 rounded-r-lg hover:bg-white/80">
+                    <span class="sr-only">Siguiente</span>
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/></svg>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
 
     <div class="sticky bottom-4 z-10 w-full flex justify-center mt-4 gap-4">
         <button
