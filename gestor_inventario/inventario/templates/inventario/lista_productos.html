@@ -252,7 +252,7 @@
                     <label class="block text-sm font-medium text-gray-700">Precio de Venta</label>
                     {{ edit_form.precio_venta }}
                     {% if edit_form.precio_venta.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ edit_form.precio_venta.errors.0 }}</pa>
+                        <p class="text-red-500 text-xs mt-1">{{ edit_form.precio_venta.errors.0 }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -269,30 +269,29 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // --- Referencias a los modales ---
+        
         const inventarioDialog = document.getElementById('inventario-dialog');
         const ventaDialog = document.getElementById('venta-dialog');
         const editDialog = document.getElementById('edit-dialog');
 
-        // --- Referencias a los botones de ABRIR ---
+        
         const openInventarioBtn = document.getElementById('open-inventario-modal');
         const openVentaBtn = document.getElementById('open-venta-modal');
 
-        // --- Referencias a los botones de CERRAR ---
+        
         const closeInventarioBtn = document.getElementById('close-inventario-modal');
         const closeVentaBtn = document.getElementById('close-venta-modal');
         const closeEditBtn = document.getElementById('close-edit-modal');
 
-        // --- Lógica para abrir modales ---
+        
         if (openInventarioBtn) openInventarioBtn.addEventListener('click', () => inventarioDialog.showModal());
         if (openVentaBtn) openVentaBtn.addEventListener('click', () => ventaDialog.showModal());
 
-        // --- Lógica para cerrar modales ---
         if (closeInventarioBtn) closeInventarioBtn.addEventListener('click', () => inventarioDialog.close());
         if (closeVentaBtn) closeVentaBtn.addEventListener('click', () => ventaDialog.close());
         if (closeEditBtn) closeEditBtn.addEventListener('click', () => editDialog.close());
 
-        // Cierra el modal si se hace clic fuera de él
+        
         function closeOnBackdropClick(dialog) {
             if (dialog) dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
         }
@@ -300,7 +299,7 @@
         closeOnBackdropClick(ventaDialog);
         closeOnBackdropClick(editDialog);
 
-        // --- Lógica para mostrar/ocultar precio de venta (del form de inventario) ---
+        // mostrar/ocultar precio de venta
         const campoNombreNuevo = document.getElementById('{{ inventario_form.nuevo_producto_nombre.id_for_label }}');
         const campoPrecioVenta = document.getElementById('campo_precio_venta');
         function togglePrecioVenta() {
@@ -313,7 +312,7 @@
             campoNombreNuevo.addEventListener('input', togglePrecioVenta);
         }
 
-        // --- LÓGICA PARA POBLAR Y ABRIR EL MODAL DE EDICIÓN ---
+        // lógica edición ---
         const editModalTitle = document.getElementById('edit-modal-title');
         const editProductoIdInput = document.getElementById('edit-producto-id');
         const editNombreInput = document.getElementById('{{ edit_form.nombre.id_for_label }}');
@@ -334,7 +333,7 @@
             });
         });
 
-        // --- LÓGICA PARA RE-ABRIR MODALES SI HAY ERRORES ---
+        // error handling
         const hayErrorInventario = {% if inventario_form.errors %}true{% else %}false{% endif %};
         const hayErrorVenta = {% if venta_form.errors %}true{% else %}false{% endif %};
         const hayErrorEdit = {% if edit_form.errors %}true{% else %}false{% endif %};

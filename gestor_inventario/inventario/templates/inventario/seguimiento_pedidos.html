@@ -47,11 +47,10 @@
         const trackingNumber = trackingInput.value.trim();
 
         if (trackingNumber) {
-            // Concatena la URL base con el número de seguimiento
-            // Esto asume que la URL base termina con el símbolo "=" o es la base de la consulta
+       
             const finalURL = baseURL + trackingNumber;
             
-            // Abre el enlace en una nueva pestaña
+            
             window.open(finalURL, '_blank');
         } else {
             alert('Por favor, ingresa un número de seguimiento.');
