@@ -1,5 +1,3 @@
-# inventario/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Producto, Venta, Compra
 from .forms import RegistroInventarioForm, ProductoEditForm, VentaForm
@@ -10,9 +8,6 @@ from django.core.paginator import Paginator
 import pandas as pd
 from django.http import HttpResponse
 import io
-
-
-
 
 def lista_productos(request):
     inventario_form = RegistroInventarioForm()
