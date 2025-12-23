@@ -2,9 +2,8 @@
 from django import forms
 from .models import Producto, Venta
 
-# --- ESTE ES EL FORMULARIO MODIFICADO ---
+
 class RegistroInventarioForm(forms.Form):
-    # Campo para seleccionar un producto existente (opcional)
     producto_existente = forms.ModelChoiceField(
         queryset=Producto.objects.all().order_by('nombre'), # Ordenado alfabéticamente
         required=False,
@@ -12,7 +11,6 @@ class RegistroInventarioForm(forms.Form):
         widget=forms.Select(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'})
     )
     
-    # --- Campos para crear un producto nuevo (opcional) ---
     nuevo_producto_nombre = forms.CharField(
         required=False, 
         label="Nombre del Nuevo Producto",
@@ -26,7 +24,6 @@ class RegistroInventarioForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'})
     )
 
-    # --- Campos de la compra (siempre requeridos) ---
     cantidad = forms.IntegerField(
         label="Cantidad Comprada",
         min_value=1,
@@ -39,67 +36,53 @@ class RegistroInventarioForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'})
     )
 
-    # ==================================================================
-    # --- NUEVO MÉTODO DE VALIDACIÓN (AÑADIDO) ---
-    # ==================================================================
     def clean_nuevo_producto_nombre(self):
-        """
-        Verifica si el nombre del nuevo producto ya existe en la base de datos.
-        """
         nombre = self.cleaned_data.get('nuevo_producto_nombre')
-        
-        # Solo hacemos la comprobación si el usuario escribió un nombre
         if nombre:
-            # Usamos 'iexact' para una búsqueda exacta sin importar mayúsculas/minúsculas
             if Producto.objects.filter(nombre__iexact=nombre).exists():
-                # Si existe, lanzamos un error de validación
                 raise forms.ValidationError(
                     f"Ya existe un producto llamado '{nombre}'. "
                     f"Si quieres añadir stock, búscalo en la lista de 'Producto Existente'."
                 )
-        
-        # Siempre devuelve el dato, ya sea el nombre o None
         return nombre
 
-    # --- Lógica de Validación (Sin cambios) ---
     def clean(self):
         cleaned_data = super().clean()
         existente = cleaned_data.get("producto_existente")
         nuevo_nombre = cleaned_data.get("nuevo_producto_nombre")
 
-        # 1. Debe elegir uno (existente O nuevo), pero no ambos
+        
         if existente and nuevo_nombre:
             raise forms.ValidationError(
                 "Error: No puedes seleccionar un producto existente Y crear uno nuevo a la vez.", 
                 code='conflicto'
             )
         
-        # 2. Debe elegir al menos uno
+        
         if not existente and not nuevo_nombre:
             raise forms.ValidationError(
                 "Debes seleccionar un producto existente o ingresar el nombre de uno nuevo.", 
                 code='requerido'
             )
             
-        # 3. Si es nuevo, el precio de venta es obligatorio
+        
         if nuevo_nombre and not cleaned_data.get("precio_venta"):
             self.add_error('precio_venta', 'Este campo es obligatorio al crear un producto nuevo.')
         
         return cleaned_data
 
 
-# --- Formulario de Edición (sin cambios) ---
+
 class ProductoEditForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ['nombre', 'precio_venta']
+        fields = ['nombre', 'precio_venta', 'stock']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'}),
             'precio_venta': forms.NumberInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'}),
+            'stock': forms.NumberInput(attrs={'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm'}),
         }
 
-
-# --- VentaForm (Sin cambios) ---
 class VentaForm(forms.ModelForm):
     class Meta:
         model = Venta

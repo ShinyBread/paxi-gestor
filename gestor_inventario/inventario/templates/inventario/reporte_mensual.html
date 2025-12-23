@@ -10,7 +10,6 @@
             <h3 class="text-lg font-bold mb-4 border-b pb-2">Historial de Meses</h3>
             
             <nav class="flex flex-col space-y-2 max-h-96 overflow-y-auto">
-                
                 {% for mes in meses_disponibles %}
                     {% url 'reporte_mensual' as base_url %}
                     
@@ -21,7 +20,6 @@
                               {% else %}
                                   bg-gray-100 text-gray-700 hover:bg-gray-200
                               {% endif %}">
-                        
                         {{ mes|date:"F Y" }} 
                     </a>
                 {% empty %}
@@ -62,7 +60,6 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        
                         {% for venta in ventas %}
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ venta.fecha_venta|date:"d/m/Y H:i" }}</td>
@@ -72,9 +69,15 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">${{ venta.ganancia|floatformat:0 }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ venta.cliente|default:"N/A" }}</td>
                             
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
+                                <button onclick="abrirModalEditar('{{ venta.id }}', '{{ venta.producto.nombre }}', '{{ venta.total_venta|stringformat:'d' }}')" 
+                                        class="text-blue-600 hover:text-blue-900" title="Editar precio">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                </button>
+                                
                                 <form method="post" action="{% url 'eliminar_venta' venta.id %}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta venta? El stock del producto será restaurado.');">
-                                    {% csrf_token %} <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
+                                    {% csrf_token %} 
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Eliminar</button>
                                 </form>
                             </td>
                         </tr>
@@ -91,4 +94,47 @@
         </div>
     </div>
 </div>
+
+<dialog id="edit-venta-dialog" class="p-0 rounded-lg shadow-xl backdrop:bg-black/60">
+    <div class="max-w-md bg-white p-6 rounded-lg w-full">
+        <h2 class="text-xl font-bold mb-4 text-center">Editar Precio de Venta</h2>
+        <p class="text-sm text-gray-500 text-center mb-6">Producto: <span id="nombre-producto-edit" class="font-bold text-gray-800"></span></p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="editar_venta" value="true">
+            <input type="hidden" name="venta_id" id="venta-id-edit">
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Total Venta</label>
+                <input type="number" name="nuevo_total_venta" id="nuevo-total-edit" required
+                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('edit-venta-dialog').close()" 
+                        class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md font-medium">
+                    Actualizar
+                </button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<script>
+    function abrirModalEditar(id, nombre, total) {
+        const dialog = document.getElementById('edit-venta-dialog');
+        document.getElementById('venta-id-edit').value = id;
+        document.getElementById('nombre-producto-edit').textContent = nombre;
+        document.getElementById('nuevo-total-edit').value = total;
+        dialog.showModal();
+        
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) dialog.close();
+        });
+    }
+</script>
 {% endblock %}

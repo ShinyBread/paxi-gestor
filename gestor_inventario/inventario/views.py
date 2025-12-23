@@ -24,7 +24,6 @@ def lista_productos(request):
                 producto = None
 
                 if cd.get('nuevo_producto_nombre'):
-                    
                     producto = Producto.objects.create(
                         nombre=cd['nuevo_producto_nombre'],
                         precio_venta=cd['precio_venta'],
@@ -32,10 +31,8 @@ def lista_productos(request):
                         precio_compra=0
                     )
                 else:
-                    
                     producto = cd.get('producto_existente')
 
-                
                 stock_actual = producto.stock
                 costo_actual_unitario = producto.precio_compra
                 valor_inventario_actual = stock_actual * costo_actual_unitario
@@ -50,11 +47,9 @@ def lista_productos(request):
                 if nuevo_stock_total > 0:
                     nuevo_costo_promedio = nuevo_valor_inventario_total / nuevo_stock_total
                 
-                
                 producto.stock = nuevo_stock_total
                 producto.precio_compra = round(nuevo_costo_promedio, 0)
                 producto.save()
-                
                 
                 Compra.objects.create(
                     producto=producto,
@@ -63,7 +58,6 @@ def lista_productos(request):
                 )
                 return redirect('lista_productos') 
 
-        
         elif form_type == 'venta':
             venta_form = VentaForm(request.POST)
             if venta_form.is_valid():
@@ -73,7 +67,6 @@ def lista_productos(request):
                 producto.save()
                 venta.save() 
                 return redirect('lista_productos')
-        
         
         elif form_type == 'edit_producto':
             producto_id = request.POST.get('producto_id')
@@ -112,10 +105,7 @@ def lista_productos(request):
     return render(request, 'inventario/lista_productos.html', context)
 
 
-
-
 def eliminar_producto(request, producto_id):
-    
     producto = get_object_or_404(Producto, id=producto_id)
     if request.method == 'POST':
         producto.delete()
@@ -123,19 +113,26 @@ def eliminar_producto(request, producto_id):
 
 
 def eliminar_venta(request, venta_id):
-    
     venta = get_object_or_404(Venta, id=venta_id)
     if request.method == 'POST':
         producto = venta.producto
         producto.stock += venta.cantidad
         producto.save()
         venta.delete()
-    return redirect('reporte_mensual')
-
-
+    return redirect(request.META.get('HTTP_REFERER', 'reporte_mensual'))
 
 
 def reporte_mensual(request):
+    if request.method == 'POST' and 'editar_venta' in request.POST:
+        venta_id = request.POST.get('venta_id')
+        nuevo_total = float(request.POST.get('nuevo_total_venta'))
+        venta = get_object_or_404(Venta, id=venta_id)
+        costo_total_original = venta.total_venta - venta.ganancia
+        venta.total_venta = nuevo_total
+        venta.ganancia = nuevo_total - costo_total_original
+        venta.save()
+        return redirect(request.get_full_path())
+
     meses_disponibles = Venta.objects.dates('fecha_venta', 'month', order='DESC')
     today = timezone.now()
     
@@ -143,16 +140,13 @@ def reporte_mensual(request):
         year = int(request.GET.get('year'))
         month = int(request.GET.get('month'))
     except (TypeError, ValueError):
-        
         if meses_disponibles:
             year = meses_disponibles[0].year
             month = meses_disponibles[0].month
         else:
-            
             year = today.year
             month = today.month
 
-    
     if not Venta.objects.filter(fecha_venta__year=year, fecha_venta__month=month).exists() and meses_disponibles:
         year = meses_disponibles[0].year
         month = meses_disponibles[0].month
@@ -175,12 +169,16 @@ def reporte_mensual(request):
         'selected_month': int(month),
     }
     return render(request, 'inventario/reporte_mensual.html', context)
+
+
 def historial_compras(request):
     compras = Compra.objects.select_related('producto').order_by('-fecha_compra')
     context = {
-        'compras': compras, # O 'compras': compras_pagina si usas paginación
+        'compras': compras,
     }
     return render(request, 'inventario/historial_compras.html', context)
+
+
 def exportar_excel(request):
     productos = Producto.objects.all().values(
         'nombre', 'stock', 'precio_compra', 'precio_venta'
@@ -195,7 +193,6 @@ def exportar_excel(request):
     df_productos = pd.DataFrame(list(productos))
     df_ventas = pd.DataFrame(list(ventas))
     df_compras = pd.DataFrame(list(compras))
-
     
     df_productos.rename(columns={'precio_compra': 'costo_promedio'}, inplace=True)
     df_ventas.rename(columns={'producto__nombre': 'producto'}, inplace=True)
@@ -205,7 +202,6 @@ def exportar_excel(request):
         df_ventas['fecha_venta'] = pd.to_datetime(df_ventas['fecha_venta']).dt.strftime('%Y-%m-%d %H:%M:%S')
     if not df_compras.empty:
         df_compras['fecha_compra'] = pd.to_datetime(df_compras['fecha_compra']).dt.strftime('%Y-%m-%d %H:%M:%S')
-
 
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -227,9 +223,7 @@ def exportar_excel(request):
                 adjusted_width = (max_length + 2)
                 worksheet.column_dimensions[column].width = adjusted_width
 
-
     output.seek(0) 
-
     
     response = HttpResponse(
         output,
@@ -238,5 +232,7 @@ def exportar_excel(request):
     response['Content-Disposition'] = 'attachment; filename="inventario_export.xlsx"'
 
     return response
+
+
 def seguimiento_pedidos(request):
     return render(request, 'inventario/seguimiento_pedidos.html', {})
