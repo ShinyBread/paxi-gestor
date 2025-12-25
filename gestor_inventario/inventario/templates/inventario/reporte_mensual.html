@@ -70,8 +70,14 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ venta.cliente|default:"N/A" }}</td>
                             
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
-                                <button onclick="abrirModalEditar('{{ venta.id }}', '{{ venta.producto.nombre }}', '{{ venta.total_venta|stringformat:'d' }}')" 
-                                        class="text-blue-600 hover:text-blue-900" title="Editar precio">
+                                
+                                <button type="button"
+                                        onclick="abrirModalEditar(this)" 
+                                        data-id="{{ venta.id }}"
+                                        data-nombre="{{ venta.producto.nombre }}"
+                                        data-total="{{ venta.total_venta|floatformat:0 }}"
+                                        class="text-blue-600 hover:text-blue-900" 
+                                        title="Editar precio">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 </button>
                                 
@@ -125,13 +131,16 @@
 </dialog>
 
 <script>
-    function abrirModalEditar(id, nombre, total) {
+    function abrirModalEditar(btn) {
+        const id = btn.getAttribute('data-id');
+        const nombre = btn.getAttribute('data-nombre');
+        let total = btn.getAttribute('data-total');
+        if(total) total = total.replace(',', '');
         const dialog = document.getElementById('edit-venta-dialog');
         document.getElementById('venta-id-edit').value = id;
         document.getElementById('nombre-producto-edit').textContent = nombre;
         document.getElementById('nuevo-total-edit').value = total;
-        dialog.showModal();
-        
+        dialog.showModal();  
         dialog.addEventListener('click', (e) => {
             if (e.target === dialog) dialog.close();
         });

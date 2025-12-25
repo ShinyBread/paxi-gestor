@@ -1,13 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Producto, Venta, Compra
-from .forms import RegistroInventarioForm, ProductoEditForm, VentaForm
 from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from django.core.paginator import Paginator
-import pandas as pd
 from django.http import HttpResponse
+import pandas as pd
 import io
+from .models import Producto, Venta, Compra
+from .forms import RegistroInventarioForm, ProductoEditForm, VentaForm
+
 
 def lista_productos(request):
     inventario_form = RegistroInventarioForm()
@@ -16,12 +18,12 @@ def lista_productos(request):
 
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
-        
+
+        # ================== COMPRAS ==================
         if form_type == 'inventario':
             inventario_form = RegistroInventarioForm(request.POST)
             if inventario_form.is_valid():
                 cd = inventario_form.cleaned_data
-                producto = None
 
                 if cd.get('nuevo_producto_nombre'):
                     producto = Producto.objects.create(
@@ -31,78 +33,84 @@ def lista_productos(request):
                         precio_compra=0
                     )
                 else:
-                    producto = cd.get('producto_existente')
+                    producto = cd['producto_existente']
 
                 stock_actual = producto.stock
-                costo_actual_unitario = producto.precio_compra
-                valor_inventario_actual = stock_actual * costo_actual_unitario
-                
-                cantidad_comprada = cd['cantidad']
-                costo_compra_actual = cd['costo_total']
-                
-                nuevo_stock_total = stock_actual + cantidad_comprada
-                nuevo_valor_inventario_total = valor_inventario_actual + costo_compra_actual
-                
-                nuevo_costo_promedio = 0
-                if nuevo_stock_total > 0:
-                    nuevo_costo_promedio = nuevo_valor_inventario_total / nuevo_stock_total
-                
-                producto.stock = nuevo_stock_total
-                producto.precio_compra = round(nuevo_costo_promedio, 0)
+                valor_actual = stock_actual * producto.precio_compra
+
+                cantidad = cd['cantidad']
+                costo_total = cd['costo_total']
+
+                nuevo_stock = stock_actual + cantidad
+                nuevo_valor = valor_actual + costo_total
+
+                nuevo_cpp = (
+                    nuevo_valor / Decimal(nuevo_stock)
+                    if nuevo_stock > 0 else Decimal('0.00')
+                )
+
+                producto.stock = nuevo_stock
+                producto.precio_compra = round(nuevo_cpp, 2)
                 producto.save()
-                
+
                 Compra.objects.create(
                     producto=producto,
-                    cantidad=cantidad_comprada,
-                    costo_total=costo_compra_actual
+                    cantidad=cantidad,
+                    costo_total=costo_total
                 )
-                return redirect('lista_productos') 
 
+                return redirect('lista_productos')
+
+        # ================== VENTAS ==================
         elif form_type == 'venta':
             venta_form = VentaForm(request.POST)
             if venta_form.is_valid():
                 venta = venta_form.save(commit=False)
                 producto = venta.producto
-                producto.stock -= venta.cantidad
-                producto.save()
-                venta.save() 
-                return redirect('lista_productos')
-        
+
+                if venta.cantidad > producto.stock:
+                    venta_form.add_error('cantidad', 'Stock insuficiente')
+                else:
+                    producto.stock -= venta.cantidad
+                    producto.save()
+                    venta.save()
+                    return redirect('lista_productos')
+
+        # ================== EDITAR PRODUCTO ==================
         elif form_type == 'edit_producto':
-            producto_id = request.POST.get('producto_id')
-            producto = get_object_or_404(Producto, id=producto_id)
+            producto = get_object_or_404(Producto, id=request.POST.get('producto_id'))
             edit_form = ProductoEditForm(request.POST, instance=producto)
             if edit_form.is_valid():
                 edit_form.save()
                 return redirect('lista_productos')
 
     queryset = Producto.objects.all().order_by('nombre')
+
     search_query = request.GET.get('q', '')
     filtro_stock = request.GET.get('filtro_stock', '')
 
     if search_query:
-        queryset = queryset.filter(Q(nombre__icontains=search_query))
-    if filtro_stock:
-        if filtro_stock == 'agotado':
-            queryset = queryset.filter(stock=0)
-        elif filtro_stock == 'poco_stock':
-            queryset = queryset.filter(stock__gt=0, stock__lt=10)
-        elif filtro_stock == 'en_stock':
-            queryset = queryset.filter(stock__gte=10)
+        queryset = queryset.filter(nombre__icontains=search_query)
+
+    if filtro_stock == 'agotado':
+        queryset = queryset.filter(stock=0)
+    elif filtro_stock == 'poco_stock':
+        queryset = queryset.filter(stock__gt=0, stock__lt=10)
+    elif filtro_stock == 'en_stock':
+        queryset = queryset.filter(stock__gte=10)
 
     paginator = Paginator(queryset, 9)
-    page_number = request.GET.get('page')
-    productos_pagina = paginator.get_page(page_number)
+    productos_pagina = paginator.get_page(request.GET.get('page'))
 
-    context = {
-        'productos_pagina': productos_pagina, 
+    return render(request, 'inventario/lista_productos.html', {
+        'productos_pagina': productos_pagina,
+        'inventario_form': inventario_form,
+        'venta_form': venta_form,
+        'edit_form': edit_form,
         'search_query': search_query,
-        'filtro_stock': filtro_stock,
-        'inventario_form': inventario_form, 
-        'venta_form': venta_form,         
-        'edit_form': edit_form,           
-    }
-    return render(request, 'inventario/lista_productos.html', context)
+        'filtro_stock': filtro_stock
+    })
+
 
 
 def eliminar_producto(request, producto_id):
@@ -124,18 +132,25 @@ def eliminar_venta(request, venta_id):
 
 def reporte_mensual(request):
     if request.method == 'POST' and 'editar_venta' in request.POST:
-        venta_id = request.POST.get('venta_id')
-        nuevo_total = float(request.POST.get('nuevo_total_venta'))
-        venta = get_object_or_404(Venta, id=venta_id)
-        costo_total_original = venta.total_venta - venta.ganancia
+        venta = get_object_or_404(Venta, id=request.POST.get('venta_id'))
+
+        try:
+            nuevo_total = Decimal(request.POST.get('nuevo_total_venta'))
+        except (InvalidOperation, TypeError):
+            nuevo_total = venta.total_venta
+
+        costo_real = venta.producto.precio_compra * venta.cantidad
+
         venta.total_venta = nuevo_total
-        venta.ganancia = nuevo_total - costo_total_original
-        venta.save()
+        venta.ganancia = nuevo_total - costo_real
+
+        venta.save(update_fields=['total_venta', 'ganancia'])
+
         return redirect(request.get_full_path())
 
     meses_disponibles = Venta.objects.dates('fecha_venta', 'month', order='DESC')
     today = timezone.now()
-    
+
     try:
         year = int(request.GET.get('year'))
         month = int(request.GET.get('month'))
@@ -147,28 +162,29 @@ def reporte_mensual(request):
             year = today.year
             month = today.month
 
-    if not Venta.objects.filter(fecha_venta__year=year, fecha_venta__month=month).exists() and meses_disponibles:
-        year = meses_disponibles[0].year
-        month = meses_disponibles[0].month
-
     ventas_mes = Venta.objects.filter(
         fecha_venta__year=year,
         fecha_venta__month=month
     ).order_by('-fecha_venta')
 
-    total_ventas_mes = ventas_mes.aggregate(Sum('total_venta'))['total_venta__sum'] or 0
-    ganancia_total_mes = ventas_mes.aggregate(Sum('ganancia'))['ganancia__sum'] or 0
-    
-    context = {
+    total_ventas = ventas_mes.aggregate(
+        total=Sum('total_venta')
+    )['total'] or Decimal('0.00')
+
+    ganancia_total = ventas_mes.aggregate(
+        total=Sum('ganancia')
+    )['total'] or Decimal('0.00')
+
+    return render(request, 'inventario/reporte_mensual.html', {
         'ventas': ventas_mes,
-        'total_ventas': total_ventas_mes,
-        'ganancia_total': ganancia_total_mes,
+        'total_ventas': total_ventas,
+        'ganancia_total': ganancia_total,
         'fecha_reporte': datetime(year, month, 1),
         'meses_disponibles': meses_disponibles,
-        'selected_year': int(year),
-        'selected_month': int(month),
-    }
-    return render(request, 'inventario/reporte_mensual.html', context)
+        'selected_year': year,
+        'selected_month': month
+    })
+
 
 
 def historial_compras(request):
