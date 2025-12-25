@@ -1,13 +1,10 @@
 {% extends 'base.html' %}
-
 {% block title %}Gestionar Productos{% endblock %}
-
 {% block content %}
 <div class="pb-4">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Gestión de Productos</h2>
     </div>
-
     <form method="get" class="mb-6 p-4 bg-white/30 rounded-lg border border-white/20">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
@@ -31,7 +28,6 @@
             <a href="{% url 'lista_productos' %}" class="ml-3 text-sm text-gray-500 hover:text-gray-700">Limpiar filtros</a>
         </div>
     </form>
-
     <div class="overflow-x-auto rounded-lg bg-white/30 border border-white/20">
         <table class="min-w-full divide-y divide-gray-200/50">
             <thead class="bg-white/10">
@@ -82,7 +78,6 @@
             </tbody>
         </table>
     </div>
-
     <nav class="mt-6 flex items-center justify-end">
         <ul class="flex items-center space-x-1 text-base">
             {% if productos_pagina.has_previous %}
@@ -93,7 +88,6 @@
                     </a>
                 </li>
             {% endif %}
-
             {% for i in productos_pagina.paginator.page_range %}
                 {% if i == productos_pagina.number or i == 1 or i == productos_pagina.paginator.num_pages or i <= productos_pagina.number|add:2 and i >= productos_pagina.number|add:"-2" %}
                     <li>
@@ -106,7 +100,6 @@
                     <li><span class="flex items-center justify-center w-10 h-10 text-gray-400">...</span></li>
                 {% endif %}
             {% endfor %}
-
             {% if productos_pagina.has_next %}
                 <li>
                     <a href="?page={{ productos_pagina.next_page_number }}&q={{ search_query }}&filtro_stock={{ filtro_stock }}" 
@@ -117,7 +110,6 @@
             {% endif %}
         </ul>
     </nav>
-
     <div class="sticky bottom-4 z-10 w-full flex justify-center mt-4 gap-4">
         <button id="open-inventario-modal" title="Añadir Inventario" class="flex items-center gap-2 bg-blue-600 text-white font-semibold py-3 px-5 rounded-lg shadow-lg hover:bg-blue-700">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -129,7 +121,6 @@
         </button>
     </div>
 </div>
-
 <dialog id="inventario-dialog" class="p-0 rounded-lg shadow-xl backdrop:bg-black/60">
     <div class="max-w-lg bg-white p-8 rounded-lg">
         <h2 class="text-2xl font-bold mb-6 text-center">Añadir Inventario</h2>
@@ -185,16 +176,15 @@
         </form>
     </div>
 </dialog>
-
 <dialog id="venta-dialog" class="p-0 rounded-lg shadow-xl backdrop:bg-black/60">
-     <div class="max-w-lg bg-white p-8 rounded-lg">
+     <div class="max-w-lg bg-white p-8 rounded-lg w-full md:w-[500px]"> 
         <h2 class="text-2xl font-bold mb-6 text-center">Registrar Nueva Venta</h2>
         <form method="post" action="{% url 'lista_productos' %}">
             {% csrf_token %}
             <input type="hidden" name="form_type" value="venta">
             <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Producto</label>
+                <div class="w-full">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
                     {{ venta_form.producto }}
                     {% if venta_form.producto.errors %}
                         <p class="text-red-500 text-xs mt-1">{{ venta_form.producto.errors.0 }}</p>
@@ -224,7 +214,6 @@
         </form>
     </div>
 </dialog>
-
 <dialog id="edit-dialog" class="p-0 rounded-lg shadow-xl backdrop:bg-black/60">
     <div class="max-w-lg bg-white p-8 rounded-lg">
         <h2 id="edit-modal-title" class="text-2xl font-bold mb-6 text-center">Editar Producto</h2>
@@ -264,8 +253,17 @@
         </form>
     </div>
 </dialog>
-
+{% endblock %}
+{% block extra_js %}
 <script>
+    $(document).ready(function() {
+        $('#id_producto').select2({
+            placeholder: "Escribe para buscar un producto...",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#venta-dialog') 
+        });
+    });
     document.addEventListener('DOMContentLoaded', function() {
         const inventarioDialog = document.getElementById('inventario-dialog');
         const ventaDialog = document.getElementById('venta-dialog');
@@ -290,7 +288,6 @@
         closeOnBackdropClick(inventarioDialog);
         closeOnBackdropClick(ventaDialog);
         closeOnBackdropClick(editDialog);
-
         const campoNombreNuevo = document.getElementById('{{ inventario_form.nuevo_producto_nombre.id_for_label }}');
         const campoPrecioVenta = document.getElementById('campo_precio_venta');
         function togglePrecioVenta() {
@@ -302,34 +299,28 @@
             togglePrecioVenta();
             campoNombreNuevo.addEventListener('input', togglePrecioVenta);
         }
-
         const editModalTitle = document.getElementById('edit-modal-title');
         const editProductoIdInput = document.getElementById('edit-producto-id');
         const editNombreInput = document.getElementById('{{ edit_form.nombre.id_for_label }}');
         const editPrecioInput = document.getElementById('{{ edit_form.precio_venta.id_for_label }}');
         const editStockInput = document.getElementById('{{ edit_form.stock.id_for_label }}');
-
         document.querySelectorAll('.open-edit-modal-btn').forEach(button => {
             button.addEventListener('click', () => {
                 const id = button.dataset.productId;
                 const nombre = button.dataset.productName;
                 const precio = button.dataset.productPrice;
                 const stock = button.dataset.productStock;
-
                 editModalTitle.textContent = `Editar "${nombre}"`;
                 editProductoIdInput.value = id;
                 editNombreInput.value = nombre;
                 editPrecioInput.value = precio;
                 if (editStockInput) editStockInput.value = stock;
-                
                 editDialog.showModal();
             });
         });
-
         const hayErrorInventario = {% if inventario_form.errors %}true{% else %}false{% endif %};
         const hayErrorVenta = {% if venta_form.errors %}true{% else %}false{% endif %};
         const hayErrorEdit = {% if edit_form.errors %}true{% else %}false{% endif %};
-
         if (hayErrorInventario && inventarioDialog) inventarioDialog.showModal();
         if (hayErrorVenta && ventaDialog) ventaDialog.showModal();
         if (hayErrorEdit && editDialog) {

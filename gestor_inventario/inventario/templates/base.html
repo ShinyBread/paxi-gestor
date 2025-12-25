@@ -6,40 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gestor de Inventario{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{% static 'inventario/images/logo.png' %}">
-
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         body { font-family: 'Fredoka', sans-serif; }
         h1, h2, h3, h4, h5, h6, .font-bold, b, strong { font-weight: 600; }
-        /* Hide scrollbar */
         main::-webkit-scrollbar { display: none; }
         main { -ms-overflow-style: none; scrollbar-width: none; }
+        .select2-container .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 42px !important;
+            padding-left: 12px !important;
+            color: #374151 !important;
+        }
+        .select2-search__field {
+            border-radius: 0.375rem !important;
+        }
     </style>
 </head>
-
 <body class="flex flex-col md:flex-row min-h-screen bg-[#f6e8fc] p-2 md:p-4 gap-2 md:gap-4">
-
     <header class="md:hidden flex justify-between items-center p-3 bg-[#f792ca]/70 text-white rounded-lg shadow-lg backdrop-blur-md">
         <a href="{% url 'lista_productos' %}" class="font-bold text-xl">Mi Inventario</a>
         <button id="menu-toggle" class="p-2 rounded hover:bg-white/10 focus:outline-none">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/> </svg>
         </button>
     </header>
-
     <nav id="sidebar" class="fixed inset-y-0 left-0 z-50 w-60 bg-[#f792ca]/90 text-white flex-col p-4 shadow-lg backdrop-blur-lg border-r border-white/20 transform -translate-x-full md:relative md:translate-x-0 md:flex md:rounded-2xl transition-transform duration-300 ease-in-out">
         <button id="menu-close" class="absolute top-4 right-4 md:hidden p-1 rounded hover:bg-white/10 focus:outline-none">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
-
         <a href="{% url 'lista_productos' %}" class="flex flex-col items-center mb-6 pb-4 border-b border-white/30 pt-8 md:pt-0">
              <img src="{% static 'inventario/images/logo.png' %}" alt="Logo Pazb Shop" class="w-24 h-24 rounded-full mb-2">
              <span class="font-bold text-xl text-center">Mi Inventario</span>
         </a>
-
         <div class="flex flex-col space-y-2 mt-4 md:mt-0">
             <a href="{% url 'lista_productos' %}" class="text-lg px-4 py-3 rounded hover:bg-white/10">
                 Productos
@@ -58,19 +69,16 @@
             </a>
         </div>
     </nav>
-
     <main class="flex-1 overflow-y-auto p-8 bg-white/50 rounded-lg md:rounded-2xl shadow-lg backdrop-blur-md">
         <div class="container mx-auto">
             {% block content %}{% endblock %}
         </div>
     </main>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
             const menuToggle = document.getElementById('menu-toggle');
             const menuClose = document.getElementById('menu-close');
-
             if (menuToggle && sidebar) {
                 menuToggle.addEventListener('click', () => {
                     sidebar.classList.remove('-translate-x-full');
@@ -90,5 +98,8 @@
             });
         });
     </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
